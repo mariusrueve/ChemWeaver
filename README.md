@@ -1,6 +1,6 @@
 # ChemWeaver
 
-# Idea
+## Idea
 
 Creating a chemical similarity database using a graph-based database along with fingerprints and other descriptors is a great way to manage and analyze chemical data efficiently. Here’s a step-by-step guide to get you started:
 
