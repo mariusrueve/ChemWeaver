@@ -1,0 +1,14 @@
+services:
+  neo4j:
+    container_name: neo4j
+    image: neo4j:latest
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - ./neo4j_db/data:/data
+    env_file:
+      - .env.neo4j
+
+volumes:
+  neo4j_data:
