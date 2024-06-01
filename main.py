@@ -1,6 +1,7 @@
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from neo4j import GraphDatabase
+import random
 
 # Connect to Neo4j
 driver = GraphDatabase.driver("neo4j://localhost:7687", auth=("neo4j", "1234"))
@@ -16,7 +17,7 @@ driver = GraphDatabase.driver("neo4j://localhost:7687", auth=("neo4j", "1234"))
 molecules = Chem.SDMolSupplier("chembl_861.sdf")
 molecules = [mol for mol in molecules if mol is not None]
 # Take 20 Example molecules
-molecules = molecules[:20]
+molecules = random.sample(molecules, 20)
 molecules = {mol.GetProp("chembl_id"): Chem.MolToSmiles(mol) for mol in molecules}
 # remove molecules with invalid SMILES
 molecules = {name: smiles for name, smiles in molecules.items() if Chem.MolFromSmiles(smiles) is not None}
