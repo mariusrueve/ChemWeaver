@@ -29,6 +29,10 @@ After running the Python script, the molecules will be loaded into the database 
 MATCH (n) RETURN n LIMIT 25
 ```
 
+The results will look like this:
+
+![Results](./docs/screenshots/image.png)
+
 ## Ideas and Roadmap
 
 Creating a chemical similarity database using a graph-based database along with fingerprints and other descriptors is a great way to manage and analyze chemical data efficiently. Here’s a step-by-step guide to get you started:
