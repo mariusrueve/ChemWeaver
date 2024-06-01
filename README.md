@@ -14,15 +14,22 @@ pip install -r requirements.txt
 
 # Run docker-compose
 docker-compose up -d
+```
 
-# Wait for the database to start
+Now wait for the database to start up. You can check if the database is ready by accessing the application at [http://localhost:7474](http://localhost:7474). The default username and password are `neo4j` and `1234`.
+
+```bash
 # Run the application
 python main.py
 ```
 
-Now you can access the application at [http://localhost:7474](http://localhost:7474). The default username and password are `neo4j` and `1234`.
+After running the Python script, the molecules will be loaded into the database and the similarities will be calculated. The results can be accessed by querying the database with Cypher.
 
-## Idea
+```cypher
+MATCH (n) RETURN n LIMIT 25
+```
+
+## Ideas and Roadmap
 
 Creating a chemical similarity database using a graph-based database along with fingerprints and other descriptors is a great way to manage and analyze chemical data efficiently. Here’s a step-by-step guide to get you started:
 
