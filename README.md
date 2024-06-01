@@ -20,6 +20,8 @@ docker-compose up -d
 python main.py
 ```
 
+Now you can access the application at [http://localhost:7474](http://localhost:7474). The default username and password are `neo4j` and `1234`.
+
 ## Idea
 
 Creating a chemical similarity database using a graph-based database along with fingerprints and other descriptors is a great way to manage and analyze chemical data efficiently. Here’s a step-by-step guide to get you started:
