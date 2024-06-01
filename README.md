@@ -1,5 +1,25 @@
 # ChemWeaver
 
+## Getting Started
+
+```bash
+# Clone the repository
+git clone https://github.com/mariusrueve/ChemWeaver.git
+
+# Change directory
+cd ChemWeaver
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run docker-compose
+docker-compose up -d
+
+# Wait for the database to start
+# Run the application
+python main.py
+```
+
 ## Idea
 
 Creating a chemical similarity database using a graph-based database along with fingerprints and other descriptors is a great way to manage and analyze chemical data efficiently. Here’s a step-by-step guide to get you started:
