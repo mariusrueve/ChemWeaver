@@ -1,63 +1,55 @@
+from rdkit import Chem
+from rdkit.Chem import AllChem
 from neo4j import GraphDatabase
 
+# Connect to Neo4j
+driver = GraphDatabase.driver("neo4j://localhost:7687", auth=("neo4j", "1234"))
 
-URI = "neo4j://localhost:7687"
-employee_threshold=10
+# # Example molecules
+# molecules = {
+#     "aspirin": "CC(=O)OC1=CC=CC=C1C(=O)O",
+#     "caffeine": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+#     # Add more molecules as needed
+# }
 
+# Load molecules from a file
+molecules = Chem.SDMolSupplier("chembl_861.sdf")
+molecules = [mol for mol in molecules if mol is not None]
+# Take 20 Example molecules
+molecules = molecules[:20]
+molecules = {mol.GetProp("chembl_id"): Chem.MolToSmiles(mol) for mol in molecules}
+# remove molecules with invalid SMILES
+molecules = {name: smiles for name, smiles in molecules.items() if Chem.MolFromSmiles(smiles) is not None}
 
-def main():
-    with GraphDatabase.driver(URI) as driver:
-        with driver.session(database="neo4j") as session:
-            for i in range(100):
-                name = f"Thor{i}"
-                org_id = session.execute_write(employ_person_tx, name)
-                print(f"User {name} added to organization {org_id}")
+# Generate fingerprints
+fingerprints = {}
+for name, smiles in molecules.items():
+    mol = Chem.MolFromSmiles(smiles)
+    fingerprint = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=1024)
+    fingerprints[name] = list(fingerprint)
 
+similarity_query = """
+MATCH (m1:Molecule {id: $name1})
+MATCH (m2:Molecule {id: $name2})
+RETURN gds.similarity.jaccard(m1.fingerprint, m2.fingerprint) AS similarity
+"""
 
-def employ_person_tx(tx, name):
-    # Create new Person node with given name, if not exists already
-    result = tx.run("""
-        MERGE (p:Person {name: $name})
-        RETURN p.name AS name
-        """, name=name
-    )
-
-    # Obtain most recent organization ID and the number of people linked to it
-    result = tx.run("""
-        MATCH (o:Organization)
-        RETURN o.id AS id, COUNT{(p:Person)-[r:WORKS_FOR]->(o)} AS employees_n
-        ORDER BY o.created_date DESC
-        LIMIT 1
-    """)
-    org = result.single()
-
-    if org is not None and org["employees_n"] == 0:
-        raise Exception("Most recent organization is empty.")
-        # Transaction will roll back -> not even Person is created!
-
-    # If org does not have too many employees, add this Person to that
-    if org is not None and org.get("employees_n") < employee_threshold:
-        result = tx.run("""
-            MATCH (o:Organization {id: $org_id})
-            MATCH (p:Person {name: $name})
-            MERGE (p)-[r:WORKS_FOR]->(o)
-            RETURN $org_id AS id
-            """, org_id=org["id"], name=name
-        )
-
-    # Otherwise, create a new Organization and link Person to it
-    else:
-        result = tx.run("""
-            MATCH (p:Person {name: $name})
-            CREATE (o:Organization {id: randomuuid(), created_date: datetime()})
-            MERGE (p)-[r:WORKS_FOR]->(o)
-            RETURN o.id AS id
-            """, name=name
-        )
-
-    # Return the Organization ID to which the new Person ends up in
-    return result.single()["id"]
-
-
-if __name__ == "__main__":
-    main()
+# Load molecules and fingerprints into Neo4j
+with driver.session() as session:
+    for name, fingerprint in fingerprints.items():
+        session.run("CREATE (m:Molecule {id: $name, smiles: $smiles, fingerprint: $fingerprint})",
+                    name=name, smiles=molecules[name], fingerprint=fingerprint)
+        
+    for name1 in molecules:
+        for name2 in molecules:
+            if name1 != name2:
+                result = session.run(similarity_query, name1=name1, name2=name2)
+                similarity = result.single()["similarity"]
+                print(f"Similarity between {name1} and {name2}: {similarity}")
+                # Create a relationship if similarity is above a certain threshold
+                if similarity > 0.99:
+                    session.run("MATCH (m1:Molecule {id: $name1}) MATCH (m2:Molecule {id: $name2}) "
+                                "MERGE (m1)-[:SIMILAR_TO {similarity: $similarity}]->(m2)",
+                                name1=name1, name2=name2, similarity=similarity)
+                    
+driver.close()
